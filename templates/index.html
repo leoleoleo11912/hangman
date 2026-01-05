@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hangman Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
+        .hangman {
+            font-family: monospace;
+            white-space: pre;
+            font-size: 18px;
+            margin: 20px 0;
+            min-height: 180px;
+        }
+        .word-display {
+            font-size: 24px;
+            letter-spacing: 10px;
+            margin: 20px 0;
+        }
+        .guesses {
+            margin: 20px 0;
+            min-height: 24px;
+        }
+        .message {
+            margin: 20px 0;
+            min-height: 24px;
+            font-weight: bold;
+        }
+        .keyboard {
+            margin: 20px 0;
+        }
+        .keyboard button {
+            width: 40px;
+            height: 40px;
+            margin: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .keyboard button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .new-game {
+            margin-top: 20px;
+        }
+        .new-game button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        .new-game button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h1>Hangman Game</h1>
+    <div class="hangman">{{ hangman_display | safe }}</div>
+    <div class="word-display">{{ word_display }}</div>
+    <div class="message">{{ message }}</div>
+    <div class="guesses">
+        Guessed letters: {{ guessed_letters }}
+    </div>
+    <div class="keyboard">
+        {% for letter in 'abcdefghijklmnopqrstuvwxyz' %}
+            <button onclick="guessLetter('{{ letter }}')" 
+                    {% if letter in guessed_letters %}disabled{% endif %}>
+                {{ letter }}
+            </button>
+        {% endfor %}
+    </div>
+    <div class="new-game">
+        <button onclick="newGame()">New Game</button>
+    </div>
+
+    <script>
+        function guessLetter(letter) {
+            fetch('/guess', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ letter: letter })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.redirect) {
+                    window.location.href = data.redirect;
+                } else {
+                    location.reload();
+                }
+            });
+        }
+
+        function newGame() {
+            fetch('/new_game', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.redirect) {
+                    window.location.href = data.redirect;
+                }
+            });
+        }
+
+        // Add keyboard support
+        document.addEventListener('keydown', function(event) {
+            const key = event.key.toLowerCase();
+            if (key >= 'a' && key <= 'z') {
+                const button = document.querySelector(`button:not([disabled]):contains('${key}')`);
+                if (button) {
+                    guessLetter(key);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
